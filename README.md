@@ -5,9 +5,9 @@ A simple term deposit calculator.
 
 ## How to Run?
 
-To run the application, simply clone the project and run:
+To run the application, simply clone the project, go to the project directory and run:
 
-go run main.go
+```go run main.go -start-deposit=startDeposit -interest-rate=interestRate -term-length=termLength -interest-paid=interestPaid```
 
 ## Flags
 
