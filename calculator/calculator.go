@@ -17,26 +17,47 @@ var (
 	}
 )
 
-// Calculate performs the calculation for the final balance given the user inputs
+// Calculate calculates the final balance of a term deposit after interest.
 func Calculate(startDeposit int, interestRate float64, termLength *TermLength, paidAt PaidAt) (float64, error) {
+	fmt.Println("Running calculation for final balance...")
 	finalBalance, err := calculate(startDeposit, interestRate, termLength, paidAt)
 
 	if err != nil {
+		fmt.Println("Final balance calculation unsuccessful.")
+
 		return 0, err
 	}
+
+	fmt.Println("Final balance calculation successful.")
 
 	return finalBalance, nil
 }
 
-// Validate validates the user inputs to determine whether they are suitable to perform the final balance calculation
-func Validate(inputStartDeposit int, inputInterestRate float64, inputTermLength, inputInterestPaid string) (*NormalisedInputValues, []error) {
+// Validate validates the user inputs to determine whether can be used for
+// calculating the final balance of a term deposit.
+func Validate(startDeposit int, interestRate float64, termLength, interestPaid string) (*NormalisedInputValues, []error) {
 	fmt.Println("Running input validation...")
-	defer fmt.Println("Finished input validation")
 
+	normalised, err := validate(startDeposit, interestRate, termLength, interestPaid)
+	if err != nil {
+		fmt.Println("Input validation unsuccessful.")
+
+		return nil, err
+	}
+
+	fmt.Println("Input validation successful.")
+
+	return normalised, nil
+}
+
+// validate validates the raw user inputs to see whether they are valid for
+// the final balance calculation. If all inputs are valid, a struct containing
+// the normalised values in returned, else an error is returned.
+func validate(inputStartDeposit int, inputInterestRate float64, inputTermLength, inputInterestPaid string) (*NormalisedInputValues, []error) {
 	errors := make([]error, 0)
 
 	// Validate start deposit
-	_, err := validateStartDeposit(inputStartDeposit)
+	err := validateStartDeposit(inputStartDeposit)
 	if err != nil {
 		errors = append(errors, &ValidationError{
 			err:   err,
@@ -45,7 +66,7 @@ func Validate(inputStartDeposit int, inputInterestRate float64, inputTermLength,
 	}
 
 	// Validate interest rate
-	_, err = validateInterestRate(inputInterestRate)
+	err = validateInterestRate(inputInterestRate)
 	if err != nil {
 		errors = append(errors, &ValidationError{
 			err:   err,
@@ -86,21 +107,21 @@ func Validate(inputStartDeposit int, inputInterestRate float64, inputTermLength,
 }
 
 // validateStartDeposit Returns true if startDeposit is greater than zero, else returns false and an error
-func validateStartDeposit(startDeposit int) (bool, error) {
+func validateStartDeposit(startDeposit int) error {
 	if startDeposit <= 0 {
-		return false, fmt.Errorf("value cannot be less than or equal to zero")
+		return fmt.Errorf("value cannot be less than or equal to zero")
 	}
 
-	return true, nil
+	return nil
 }
 
 // validateInterestRate Returns true if interestRate is greater than zero, else returns false with an error
-func validateInterestRate(interestRate float64) (bool, error) {
+func validateInterestRate(interestRate float64) error {
 	if interestRate <= 0 {
-		return false, fmt.Errorf("value cannot be less than or equal to zero")
+		return fmt.Errorf("value cannot be less than or equal to zero")
 	}
 
-	return true, nil
+	return nil
 }
 
 // validateTermLength Returns the total years and months if determined, otherwise returns 0, 0 with an error
@@ -130,23 +151,21 @@ func validateTermLength(termLength string) (*TermLength, error) {
 		if err != nil {
 			return nil, err
 		}
+	// Unrecognised input
+	default:
+		return nil, fmt.Errorf("could not parse term length")
 	}
 
 	// Input was valid but both values entered for years and months was zero
-	if result != nil {
-		// Input was valid but both values entered for years and months was zero
-		if result != nil && (result.Years == 0 && result.Months == 0) {
-			return nil, fmt.Errorf("years and months cannot both be zero")
-		}
-
-		return result, nil
+	if result.Years == 0 && result.Months == 0 {
+		return nil, fmt.Errorf("years and months cannot both be zero")
 	}
 
-	// Input wasn't valid
-	return nil, fmt.Errorf("could not parse term length")
+	return result, nil
 }
 
-// validateInterestPaid - Returns the PaidAt value if determined. Else, returns Undefined with an error
+// validateInterestPaid returns the PaidAt value if determined, otherwise
+// Undefined is returned along with a corresponding error.
 func validateInterestPaid(interestPaid string) (PaidAt, error) {
 	paidAt := NewPaidAt(interestPaid)
 	if paidAt == PaidAt_Undefined {
@@ -155,8 +174,9 @@ func validateInterestPaid(interestPaid string) (PaidAt, error) {
 	return paidAt, nil
 }
 
-// parseTermLength takes in a slice of terms (e.g. [3 years], [[3 years], [2 months]]) and returns term length
-// If the terms are not valid or any errors are returned during parsing, an error is returned
+// parseTermLength takes in a slice of terms (e.g. [3 years], [[3 years], [2 months]])
+// and returns term length. If the terms are not valid or any errors are returned
+// during parsing, an error is returned.
 func parseTermLength(terms ...[]string) (*TermLength, error) {
 	result := new(TermLength)
 
@@ -189,17 +209,17 @@ func parseTermLength(terms ...[]string) (*TermLength, error) {
 	return result, nil
 }
 
-// calculate - calculates the final balance of the term deposit given the parameters provided.
-// If an error occurs, a final balance of zero is returned along with the error.
+// calculate performs the calculation to determine the final balance of the term
+// deposit given the parameters provided. If an error occurs, a final balance of
+// zero is returned along with the error.
 func calculate(startDeposit int, interestRate float64, termLength *TermLength, paidAt PaidAt) (float64, error) {
-	// Just to make sure PaidAt is defined
+	// Validate PaidAt value is valid
 	if paidAt == PaidAt_Undefined {
 		return 0, fmt.Errorf("cannot calculate final balance without a defined paid at interval")
 	}
 
-	// Just to make sure TermLength is valid
+	// Make sure TermLength value is valid
 	totalMonths := (termLength.Years * 12) + termLength.Months
-	fmt.Println(totalMonths)
 	if totalMonths <= 0 {
 		return 0, fmt.Errorf("total time of investment term cannot be less than 1 month")
 	}
@@ -220,13 +240,11 @@ func calculate(startDeposit int, interestRate float64, termLength *TermLength, p
 	return finalBalance, nil
 }
 
-// calculateAtMaturity - calculates the final balance of a maturity term deposit.
-// Uses a different equations to monthly, quarterly, and annually hence a separate function.
+// calculateAtMaturity performs the calculation for the final balance of a
+// maturity term deposit. Uses a different equations to monthly, quarterly,
+// and annually hence a separate function.
 func calculateAtMaturity(startDeposit int, interestRate float64, totalMonths int) float64 {
-
 	totalInterest := float64(startDeposit) * (interestRate / 100) * (float64(totalMonths) / 12)
-
-	fmt.Println(totalInterest)
 
 	return float64(startDeposit) + totalInterest
 }

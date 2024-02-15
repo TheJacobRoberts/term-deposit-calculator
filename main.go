@@ -26,7 +26,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	fmt.Println("Running term deposit calculator...")
+	fmt.Println("[ Term Deposit Calculator ]")
 
 	fmt.Println("Users inputs:")
 	fmt.Print(

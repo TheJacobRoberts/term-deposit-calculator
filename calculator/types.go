@@ -4,6 +4,9 @@ import (
 	"strings"
 )
 
+// PaidAt is an 'enum' which can be of the following values:
+// Undefined, Monthly, Quarterly, Annually, or AtMaturity.
+// It represents when the interval for when interest is paid.
 type PaidAt int
 
 const (
@@ -42,13 +45,20 @@ func (v PaidAt) String() string {
 	return "undefined"
 }
 
+// NormalisedInputValues defines the normalised values of user inputs used in
+// the calculator.
 type NormalisedInputValues struct {
-	StartDeposit   int
-	InterestRate   float64
-	TermLength     *TermLength
+	// The starting amount of the investment e.g. 10000 ($10,000)
+	StartDeposit int
+	// The interest rate pct. of the investment e.g. 1.1 (1.1%)
+	InterestRate float64
+	// The term length of investment e.g. 3 years, 2 months
+	TermLength *TermLength
+	// The interval which the interest is paid at on the investment e.g. quarterly
 	PaidAtInterval PaidAt
 }
 
+// TermLength defines the amount of years and months of a term
 type TermLength struct {
 	Years  int
 	Months int
